@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="tr">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Canlı Fiyatlar ve Hava Durumu</title>
+    <style>
+        body {
+            font: 16px/1.5 system-ui, sans-serif;
+            max-width: 720px;
+            margin: 2rem auto;
+        }
+
+         h3 {
+            color:aqua;
+         }
+        .card {
+            border: 1px solid #ddd;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: .75rem 0;
+        }
+
+        .label {
+            color: #555;
+        }
+
+        .value {
+            font-weight: 700;
+        }
+
+        .muted {
+            color: #888;
+            font-size: .9em;
+        }
+
+       .consent {
+
+            color: red;
+
+        }
+    </style>
+</head>
+
+<body>
+    
+   
+    <h3>Canlı Veriler</h3>
+        
+    <div class="card">
+        <div class="label">Bitcoin (BTC/TRY):</div>
+        <div id="btc" class="value">-</div>
+        <div id="btc-ts" class="muted"></div>
+    </div>
+
+    <div class="card">
+        <div class="label">EUR/USD:</div>
+        <div id="eurusd" class="value">-</div>
+        <div id="parite" class="muted"></div>
+    </div>
+
+    <div class="card">
+        <div class="label">USD/TRY:</div>
+        <div id="usdtry" class="value">-</div>
+        <div id="fx-ts" class="muted"></div>
+    </div>
+
+    <div class="card">
+        <div class="label">EUR/TRY:</div>
+        <div id="eurtry" class="value">-</div>
+        <div id="eu-ts" class="muted"></div>
+    </div>
+
+    <div class="card">
+        <div class="label city">Hava Durumu 📍 </div>
+        <div id="weather" class="value">-</div>
+        <div id="wx-ts" class="muted"></div>
+    </div>
+
+    <script>
+        const fmtTime = () => new Date().toLocaleTimeString(); //yerel saat.
+        
+        // async function fetchBTC() {
+        //     try {
+        //         const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd,try');
+        //         if (!res.ok) throw new Error('BTC isteği başarısız');
+        //         const data = await res.json();
+        //         const usd = data?.bitcoin?.usd;
+        //         const tryy = data?.bitcoin?.try;
+        //         document.getElementById('btc').textContent = usd && tryy
+        //             ? `₿ ${usd.toLocaleString('en-US', { style: 'currency', currency: 'USD' })} | ${tryy.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}`
+        //             : '⚠️ Veri yok';
+        //         document.getElementById('btc-ts').textContent = `Güncellendi: ${fmtTime()}`;
+        //     } catch (e) {
+        //         document.getElementById('btc').textContent = '⚠️ Hata';
+        //         console.error(e);
+        //     }
+        // }
+
+         async function fetchBTC() {
+                try {
+                    const res = await fetch('https://api.coingecko.com/api/v3/coins/bitcoin?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=false');
+                    if (!res.ok) throw new Error('BTC isteği başarısız');
+                    const data = await res.json();
+
+                    const usd = data?.market_data?.current_price?.usd;
+                    const try1 = data?.market_data?.current_price?.try;
+                    const changeUSD = data?.market_data?.price_change_percentage_24h_in_currency?.usd;
+                    const changeTRY = data?.market_data?.price_change_percentage_24h_in_currency?.try;
+
+                    const usdChangeIcon = changeUSD >= 0
+                        ? '<span style="color:green; font-size:1.2rem">⏶</span>'
+                        : '<span style="color:red; font-size:1.2rem">⏷</span>';
+
+                    const tryChangeIcon = changeTRY >= 0
+                        ? '<span style="color:green;font-size: 1.2rem;">⏶</span>'
+                        : '<span style="color:red;font-size: 1.2rem;">⏷</span>';
+                    const usdChangeText = `${usdChangeIcon} ${Math.abs(changeUSD).toFixed(2)}%`;
+                    const tryChangeText = `${tryChangeIcon} ${Math.abs(changeTRY).toFixed(2)}%`;
+
+                    document.getElementById('btc').innerHTML = usd && try1
+                        ? `₿  ${usd.toLocaleString('en-US', { style: 'currency', currency: 'USD' })} (${usdChangeText})<br>₿ ${try1.toLocaleString('TRY')} ₺ (${tryChangeText})`
+                        : '⚠️ Veri yok';
+
+                    document.getElementById('btc-ts').textContent = `Güncellendi: ${fmtTime()}`;
+                } catch (e) {
+                    document.getElementById('btc').textContent = '⚠️ Hata';
+                    console.error(e);
+                }
+            }
+
+        async function fetchEURUSD() {
+                try {
+                    const res = await fetch('https://open.er-api.com/v6/latest/EUR');
+                    if (!res.ok) throw new Error('FX isteği başarısız');
+                    const data = await res.json();
+                    console.log(data);
+                    const rate = data?.rates?.USD;
+                    document.getElementById('eurusd').textContent = rate
+                        ? `1 EUR = ${rate.toLocaleString('tr-TR', { maximumFractionDigits: 4 })} USD`
+                        : '⚠️ Veri yok';
+                    document.getElementById('parite').textContent = `Güncellendi: ${fmtTime()}`;
+                } catch (e) {
+                    document.getElementById('eurusd').textContent = '⚠️ Hata';
+                    console.error(e);
+                }
+        }
+
+        async function fetchUSDTRY() {
+            try {
+                const res = await fetch('https://open.er-api.com/v6/latest/USD');
+                if (!res.ok) throw new Error('FX isteği başarısız');
+                const data = await res.json();
+                console.log(data);
+                const rate = data?.rates?.TRY;
+                document.getElementById('usdtry').textContent = rate
+                    ? `1 USD = ${rate.toLocaleString('tr-TR', { maximumFractionDigits: 4 })} TRY`
+                    : '⚠️ Veri yok';
+                document.getElementById('fx-ts').textContent = `Güncellendi: ${fmtTime()}`;
+            } catch (e) {
+                document.getElementById('usdtry').textContent = '⚠️ Hata';
+                console.error(e);
+            }
+        }
+   
+
+        async function fetchEURTRY() {
+                try {
+                    const res = await fetch('https://open.er-api.com/v6/latest/EUR');
+                    if (!res.ok) throw new Error('FX isteği başarısız');
+                    const data = await res.json();
+                    console.log(data);
+                    const rate = data?.rates?.TRY;
+                    document.getElementById('eurtry').textContent = rate
+                        ? `1 EUR = ${rate.toLocaleString('tr-TR', { maximumFractionDigits: 4 })} TRY`
+                        : '⚠️ Veri yok';
+                    document.getElementById('eu-ts').textContent = `Güncellendi: ${fmtTime()}`;
+                } catch (e) {
+                    document.getElementById('usdtry').textContent = '⚠️ Hata';
+                    console.error(e);
+                }
+        }
+        navigator.geolocation.getCurrentPosition(success, error);
+
+            function success(position) {
+                document.getElementById('wx-ts').classList.remove("consent");
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+                  getLocationName(lat, lon); // konum adını al ve label'a yaz
+                  fetchWeather(lat, lon);
+                            
+            } 
+
+            function error(error) {
+                console.log("Konum alınamadı");
+                document.getElementById('wx-ts').classList.add("consent");
+                document.querySelector('.consent').textContent = `⚠️ Lütfen Konum bilginize izin verin: ${fmtTime()} ${error.message}`;
+
+            // IP tabanlı konum tahmini
+                fetch('https://ipapi.co/json/')
+                    .then(res => res.json())
+                    .then(data => {
+                        const lat = data.latitude;
+                        const lon = data.longitude;
+                        getLocationName(lat, lon);
+                        fetchWeather(lat, lon);
+                    })
+                    .catch(ipErr => {
+                        console.error("IP ile konum alınamadı", ipErr);
+                        document.querySelector('.consent').textContent =
+                            `⚠️ Konum alınamadı: ${fmtTime()} → IP ile tahmin başarısız.`;
+                    });
+    
+        }
+
+        async function getLocationName(lat, lon) {
+            const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`;
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                const address = data.address;
+                console.log("yer alınıyor", address);
+                
+                const city = data.address.city || data.address.state || data.address.region || "Şehir bilinmiyor";
+                const country = data.address.country || "Ülke bilinmiyor";
+               // document.querySelector('.city').style.color = "#33A1E0";
+                document.querySelector('.city').textContent += `${city}, ${country}`;
+            } catch (e) {
+                console.error("Konum adı alınamadı", e);
+                document.querySelector('.label').textContent += `Konum adı alınamadı`;
+            }
+
+        }
+
+        
+        async function fetchWeather(lat, lon) {
+                //const apiKey = '097fbd792d364de5adf85144251108'; // WeatherAPI.com'dan alınabilir.
+                const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`;
+                try {
+                const res = await fetch(url);
+                const data = await res.json();
+                console.log(data);
+                const weather = data.current_weather;
+                console.log(weather);
+
+                document.getElementById('weather').textContent =
+                    `🌡️ ${weather.temperature}°C, 💨 Rüzgar: ${weather.windspeed} km/h`;
+                document.getElementById('wx-ts').style.color = "#888";    
+                document.getElementById('wx-ts').textContent = `Güncellendi: ${fmtTime()} Sonraki güncelleme 3 saat sonra`;
+                } catch (e) {
+                    document.getElementById('weather').textContent = '⚠️ Hava durumu alınamadı';
+                    document.getElementById('wx-ts').textContent = `Hata oluştu: ${fmtTime()}`;
+                    console.error("Open-Meteo hatası", e);
+                }
+        }
+                
+    
+
+        function refreshAll() {
+            
+            fetchBTC();
+            fetchEURUSD();
+            fetchUSDTRY();
+            fetchEURTRY();
+            setInterval(fetchWeather, 3 * 60 * 60 * 1000); //3 saat.
+        }
+        function canliSaat(){
+            const liveData = () => new Date().toLocaleTimeString(); //yerel saat.
+            document.querySelector('h3').innerText = '';
+            document.querySelector('h3').style.color = "#33A1E0";
+            document.querySelector('h3').innerText = 'Canlı Veriler ' + liveData();
+        }
+        
+        // İlk yükleme ve periyodik güncelleme
+        refreshAll();
+        setInterval(canliSaat, 999); // 999 ms.
+        setInterval(refreshAll, 300000); // 300sn 5 dk.
+        
+    </script>
+</body>
+
+</html>
